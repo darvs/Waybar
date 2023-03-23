@@ -15,6 +15,7 @@ extern "C" {
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <list>
 }
 
 class errno_error : public std::runtime_error {
@@ -78,6 +79,18 @@ auto supportsLockStates(const libevdev* dev) -> bool {
          libevdev_has_event_code(dev, EV_LED, LED_SCROLLL);
 }
 
+//  const Json::Value actions{config_["actions"]};
+//  for (Json::Value::const_iterator it = actions.begin(); it != actions.end(); ++it)
+
+auto first_defined(const std::vector<Json::Value>& keys, const std::string& default_value) {
+  for (std::vector<Json::Value>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+    spdlog::warn("value checked");
+    if (it->isString()) return it->asString();
+  }
+  spdlog::warn("default value returned");
+  return (default_value);
+}
+
 waybar::modules::KeyboardState::KeyboardState(const std::string& id, const Bar& bar,
                                               const Json::Value& config)
     : AModule(config, "keyboard-state", id, false, !config["disable-scroll"].asBool()),
@@ -101,9 +114,10 @@ waybar::modules::KeyboardState::KeyboardState(const std::string& id, const Bar& 
       icon_locked_(config_["format-icons"]["locked"].isString()
                        ? config_["format-icons"]["locked"].asString()
                        : "locked"),
-      icon_unlocked_(config_["format-icons"]["unlocked"].isString()
-                         ? config_["format-icons"]["unlocked"].asString()
-                         : "unlocked"),
+      // icon_unlocked_(config_["format-icons"]["unlocked"].isString()
+      //                    ? config_["format-icons"]["unlocked"].asString()
+      //                    : "unlocked"),
+      icon_unlocked_(first_defined({config_["format-icons"]["unlocked"]}, "unlocked")),
       devices_path_("/dev/input/"),
       libinput_(nullptr),
       libinput_devices_({}) {
